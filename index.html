@@ -1,146 +1,312 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Elite Health Architecture</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Health Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --glass: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --accent-blue: #0a84ff;
+            --accent-green: #32d74b;
+            --protein: #FF375F;
+            --carbs: #0A84FF;
+            --fats: #FFD60A;
+            --error: #FF453A;
+        }
 
-<style>
-body {
-  margin:0;
-  font-family:-apple-system;
-  background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-  color:white;
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, system-ui, sans-serif; }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        /* LIVE MESH GRADIENT */
+        .mesh-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(at 0% 0%, #1a1a2e 0%, transparent 50%),
+                        radial-gradient(at 100% 0%, #0f3460 0%, transparent 50%),
+                        radial-gradient(at 100% 100%, #16213e 0%, transparent 50%),
+                        radial-gradient(at 0% 100%, #000 0%, transparent 50%);
+            background-size: 200% 200%;
+            animation: meshMove 20s ease infinite;
+            z-index: -2;
+        }
+        @keyframes meshMove { 0%, 100% { background-position: 0% 0%; } 50% { background-position: 100% 100%; } }
+
+        #luminous-glow {
+            position: absolute; width: 800px; height: 800px;
+            background: radial-gradient(circle, rgba(10, 132, 255, 0.15) 0%, transparent 70%);
+            filter: blur(100px); z-index: -1; transform: translate(-50%, -50%);
+            left: 50%; top: 50%; transition: all 1s;
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(50px);
+            -webkit-backdrop-filter: blur(50px);
+            border: 1px solid var(--glass-border);
+            border-radius: 44px;
+            padding: 40px;
+            width: 420px;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.9);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .error-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: var(--error); }
+
+        /* 🔥 PREMIUM BUTTON INTEGRATION */
+        .pro-btn {
+            position: relative;
+            overflow: hidden;
+            padding: 18px 22px;
+            border: none;
+            border-radius: 20px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            width: 100%;
+            margin-top: 20px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+            box-shadow: 0 12px 30px rgba(10,132,255,0.35);
+            transition: all 0.25s ease;
+            font-size: 1.1rem;
+        }
+
+        .pro-btn::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(110deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: translateX(-120%);
+            transition: transform 0.7s ease;
+        }
+
+        .pro-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 18px 50px rgba(10,132,255,0.6);
+        }
+
+        .pro-btn:hover::before { transform: translateX(120%); }
+        .pro-btn:active { transform: scale(0.95); }
+
+        input, select {
+            width: 100%; padding: 18px; margin: 12px 0;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+            border-radius: 20px; color: white; outline: none; font-size: 1rem;
+            transition: 0.3s;
+        }
+        .input-error { border-color: var(--error) !important; background: rgba(255, 69, 58, 0.05) !important; }
+
+        .hidden { display: none; opacity: 0; }
+        .visible { display: block; animation: slideUp 0.6s forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* DASHBOARD COMPONENTS */
+        .cal-hero { font-size: 4rem; font-weight: 200; color: var(--accent-green); text-shadow: 0 0 20px rgba(50, 215, 75, 0.3); }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
+        .stat-card { 
+            background: rgba(255,255,255,0.03); padding: 20px; border-radius: 24px; 
+            border: 1px solid var(--glass-border); opacity: 0; transition: transform 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.06); }
+        .animate-card { animation: slideUp 0.6s forwards; }
+
+        /* SEGMENTED CONTROL */
+        .segment-container { display: flex; background: rgba(255,255,255,0.05); border-radius: 15px; padding: 5px; margin: 10px 0; border: 1px solid var(--glass-border); }
+        .segment-btn { flex: 1; padding: 12px; cursor: pointer; border-radius: 11px; font-size: 0.85rem; transition: 0.3s; text-align: center; }
+        .active { background: linear-gradient(135deg, var(--accent-blue), #5856D6); box-shadow: 0 4px 15px rgba(0,122,255,0.3); }
+
+        .label { font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 2px; }
+    .pro-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #0a84ff, #32d74b);
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
 }
 
-.card {
-  width:400px;
-  padding:30px;
-  border-radius:30px;
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(25px);
+.pro-btn:hover {
+  transform: scale(1.05);
 }
 
-.hidden { display:none; }
-
-button {
-  width:100%;
-  padding:14px;
-  margin-top:15px;
-  border:none;
-  border-radius:20px;
-  font-weight:bold;
-  background: linear-gradient(135deg,#0a84ff,#32d74b);
-  color:white;
-  cursor:pointer;
+.pro-btn:active {
+  transform: scale(0.95);
 }
-
-input, select {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:12px;
-  border:none;
-}
-</style>
+    </style>
 </head>
-
 <body>
 
-<div class="card">
+    <div class="mesh-bg"></div>
+    <div id="luminous-glow"></div>
 
-<!-- STEP 1 -->
-<div id="step1">
-  <h2>Architecture</h2>
+    <div class="glass-card" id="mainCard">
+        
+        <div id="step1" class="visible">
+            <h2 style="font-weight: 200; margin-bottom: 20px;">Architecture</h2>
+            
+            <p class="label">Identity</p>
+            <div class="segment-container">
+                <div class="segment-btn active" onclick="setGender('male', this)">Male</div>
+                <div class="segment-btn" onclick="setGender('female', this)">Female</div>
+            </div>
 
-  <input id="height" placeholder="Height">
-  <input id="weight" placeholder="Weight">
-  <input id="age" placeholder="Age">
+            <div class="segment-container">
+                <div class="segment-btn active" id="btn-cm" onclick="setU('cm')">Metric</div>
+                <div class="segment-btn" id="btn-ft" onclick="setU('ft')">Imperial</div>
+            </div>
+            
+            <div id="h-wrap"><input type="number" id="h-val" class="validate" placeholder="Height (cm)"></div>
+            <input type="number" id="weight" class="validate" placeholder="Weight (kg)">
+            <input type="number" id="age" class="validate" placeholder="Age">
+            
+            <button class="pro-btn" onclick="validateStep1()">CONTINUE</button>
+        </div>
 
-  <button onclick="goStep2()">CONTINUE</button>
-</div>
+        <div id="step2" class="hidden">
+            <h2 style="font-weight: 200; margin-bottom: 25px;">Objective</h2>
+            <select id="goal">
+                <option value="lose">Aggressive Fat Loss</option>
+                <option value="maintain" selected>Lean Maintenance</option>
+                <option value="gain">Muscle Gain / Bulk</option>
+            </select>
+            <button class="pro-btn" onclick="genDash()">ANALYZE DATA</button>
+        </div>
 
-<!-- STEP 2 -->
-<div id="step2" class="hidden">
-  <h2>Goal</h2>
+        <div id="step3" class="hidden">
+            <p class="label">Target Calories</p>
+            <div class="cal-hero" id="d-cals">0</div>
+            <div style="height: 160px; margin: 10px 0;"><canvas id="chart"></canvas></div>
+            <div class="stat-grid" id="statGrid">
+                <div class="stat-card" style="animation-delay: 0.2s">
+                    <span id="d-p" style="color:var(--protein); font-size: 1.8rem; font-weight: 700;">0</span><p class="label">Protein</p>
+                </div>
+                <div class="stat-card" style="animation-delay: 0.4s">
+                    <span id="d-c" style="color:var(--carbs); font-size: 1.8rem; font-weight: 700;">0</span><p class="label">Carbs</p>
+                </div>
+                <div class="stat-card" style="animation-delay: 0.6s">
+                    <span id="d-f" style="color:var(--fats); font-size: 1.8rem; font-weight: 700;">0</span><p class="label">Fats</p>
+                </div>
+                <div class="stat-card" style="animation-delay: 0.8s">
+                    <span id="d-fiber" style="color:#fff; font-size: 1.8rem; font-weight: 700;">0</span><p class="label">Fiber</p>
+                </div>
+            </div>
+            <button class="pro-btn" style="background: var(--glass); margin-top: 30px; border: 1px solid var(--glass-border);" onclick="location.reload()">RESET</button>
+        <button class="pro-btn" onclick="goTracker()">LET’S GO</button>
+          </div>
+    </div>
 
-  <select id="goal">
-    <option value="lose">Fat Loss</option>
-    <option value="maintain">Maintain</option>
-    <option value="gain">Gain</option>
-  </select>
+    <script>
+        let userData = { gender: 'male', unit: 'cm' };
 
-  <button onclick="generate()">ANALYZE</button>
-</div>
+        function setGender(val, el) {
+            userData.gender = val;
+            el.parentElement.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
 
-<!-- STEP 3 -->
-<div id="step3" class="hidden">
-  <h2>Daily Plan</h2>
+        function setU(u) {
+            userData.unit = u;
+            document.getElementById('btn-cm').classList.toggle('active', u === 'cm');
+            document.getElementById('btn-ft').classList.toggle('active', u === 'ft');
+            const wrap = document.getElementById('h-wrap');
+            wrap.innerHTML = u === 'ft' 
+                ? `<div style="display:flex; gap:10px"><input type="number" id="ft" class="validate" placeholder="Ft"><input type="number" id="in" class="validate" placeholder="In"></div>`
+                : `<input type="number" id="h-val" class="validate" placeholder="Height (cm)">`;
+        }
 
-  <h1 id="cal"></h1>
+        function validateStep1() {
+            let isValid = true;
+            const fields = document.querySelectorAll('.validate');
+            fields.forEach(f => {
+                if(!f.value || f.value <= 0) { f.classList.add('input-error'); isValid = false; }
+                else { f.classList.remove('input-error'); }
+            });
 
-  <canvas id="chart"></canvas>
+            if(!isValid) {
+                const card = document.getElementById('mainCard');
+                card.classList.add('error-shake');
+                setTimeout(() => card.classList.remove('error-shake'), 400);
+                return;
+            }
+            goTo(2, '#7000FF');
+        }
 
-  <p id="protein"></p>
-  <p id="carbs"></p>
-  <p id="fats"></p>
+        function goTo(s, col) {
+            const glow = document.getElementById('luminous-glow');
+            glow.style.background = `radial-gradient(circle, ${col}44 0%, transparent 70%)`;
+            document.querySelectorAll('.glass-card > div').forEach(d => { d.classList.remove('visible'); d.classList.add('hidden'); });
+            const next = document.getElementById('step' + s);
+            next.classList.remove('hidden');
+            setTimeout(() => next.classList.add('visible'), 50);
+        }
 
-  <!-- RESET -->
-  <button onclick="location.reload()">RESET</button>
+        function genDash() {
+            goTo(3, '#32D74B');
+            document.getElementById('mainCard').style.width = '480px';
+            
+            const w = parseFloat(document.getElementById('weight').value);
+            const g = document.getElementById('goal').value;
 
-  <!-- ✅ CORRECT PLACE -->
-  <button onclick="goTracker()">LET’S GO</button>
+            let p = g === 'gain' ? w*2.2 : (g === 'lose' ? w*2.1 : w*1.8);
+            let f = userData.gender === 'female' ? w*0.9 : w*0.8; 
+            let c = g === 'gain' ? w*4.8 : (g === 'lose' ? w*2.2 : w*3.5);
+            let cals = (p*4) + (c*4) + (f*9);
 
-</div>
+            animate('d-cals', cals);
+            animate('d-p', p);
+            animate('d-c', c);
+            animate('d-f', f);
+            animate('d-fiber', Math.round(cals/1000 * 14));
 
-</div>
+            document.querySelectorAll('.stat-card').forEach(c => c.classList.add('animate-card'));
 
-<script>
+            new Chart(document.getElementById('chart'), {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [p*4, c*4, f*9],
+                        backgroundColor: ['#FF375F', '#0A84FF', '#FFD60A'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { cutout: '85%', plugins: { legend: { display: false } }, animation: { duration: 2000 } }
+            });
+        }
 
-function goStep2(){
-  document.getElementById("step1").classList.add("hidden");
-  document.getElementById("step2").classList.remove("hidden");
-}
-
-function generate(){
-  document.getElementById("step2").classList.add("hidden");
-  document.getElementById("step3").classList.remove("hidden");
-
-  let w = Number(document.getElementById("weight").value);
-  let goal = document.getElementById("goal").value;
-
-  let protein = w*2;
-  let fats = w*0.8;
-  let carbs = w*3;
-
-  let cal = protein*4 + carbs*4 + fats*9;
-
-  document.getElementById("cal").innerText = cal + " kcal";
-  document.getElementById("protein").innerText = "Protein: " + protein;
-  document.getElementById("carbs").innerText = "Carbs: " + carbs;
-  document.getElementById("fats").innerText = "Fats: " + fats;
-
-  new Chart(document.getElementById("chart"), {
-
-    type: "doughnut",
-    data: {
-      datasets: [{
-        data: [protein*4, carbs*4, fats*9],
-        backgroundColor: ["red","blue","yellow"]
-      }]
-    }
-  });
-}
-
-function goTracker(){
+        function animate(id, val) {
+            let s = 0; const obj = document.getElementById(id);
+            const t = setInterval(() => {
+                s += Math.ceil(val/40);
+                if(s >= val) { obj.innerText = Math.round(val); clearInterval(t); }
+                else obj.innerText = s;
+            }, 20);
+        }
+        function goTracker() {
   window.location.href = "tracker.html";
 }
-
-</script>
-
+    </script>
 </body>
 </html>
