@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Daily Tracker</title>
+
+<style>
+:root {
+    --glass: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --accent-blue: #0a84ff;
+    --accent-green: #32d74b;
+}
+
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, system-ui, sans-serif;
+}
+
+/* BACKGROUND (same as main app) */
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+    overflow: hidden;
+    color: #fff;
+}
+
+/* MESH BG */
+.mesh-bg {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(at 0% 0%, #1a1a2e 0%, transparent 50%),
+                radial-gradient(at 100% 0%, #0f3460 0%, transparent 50%),
+                radial-gradient(at 100% 100%, #16213e 0%, transparent 50%),
+                radial-gradient(at 0% 100%, #000 0%, transparent 50%);
+    background-size: 200% 200%;
+    animation: meshMove 20s ease infinite;
+    z-index: -2;
+}
+@keyframes meshMove {
+    0%,100% { background-position: 0% 0%; }
+    50% { background-position: 100% 100%; }
+}
+
+/* GLOW */
+#luminous-glow {
+    position: absolute;
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(10,132,255,0.15) 0%, transparent 70%);
+    filter: blur(100px);
+    z-index: -1;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    top: 50%;
+}
+
+/* GLASS CARD */
+.glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(50px);
+    border: 1px solid var(--glass-border);
+    border-radius: 44px;
+    padding: 40px;
+    width: 420px;
+    box-shadow: 0 50px 100px rgba(0,0,0,0.9);
+    animation: slideUp 0.6s ease forwards;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* TITLE */
+h2 {
+    font-weight: 200;
+    margin-bottom: 25px;
+}
+
+/* LABEL */
+.label {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* MEAL BLOCK */
+.meal {
+    margin-bottom: 18px;
+}
+
+/* INPUTS */
+input {
+    width: 100%;
+    padding: 16px;
+    margin-top: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    color: white;
+    outline: none;
+    font-size: 0.95rem;
+    transition: 0.3s;
+}
+
+/* BUTTON SAME AS MAIN */
+.pro-btn {
+    position: relative;
+    overflow: hidden;
+    padding: 18px;
+    border: none;
+    border-radius: 20px;
+    font-weight: 700;
+    color: white;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 20px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+    box-shadow: 0 12px 30px rgba(10,132,255,0.35);
+    transition: 0.25s;
+}
+
+.pro-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 18px 50px rgba(10,132,255,0.6);
+}
+
+.pro-btn:active {
+    transform: scale(0.95);
+}
+
+/* RESULT CARDS */
+.result {
+    margin-top: 25px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.stat {
+    padding: 15px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--glass-border);
+    text-align: center;
+}
+
+.stat span {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-green);
+}
+</style>
+</head>
+
+<body>
+
+<div class="mesh-bg"></div>
+<div id="luminous-glow"></div>
+
+<div class="glass-card">
+
+<h2>Daily Intake</h2>
+
+<div class="meal">
+    <p class="label">Breakfast</p>
+    <input id="breakfast" placeholder="What did you eat?">
+</div>
+
+<div class="meal">
+    <p class="label">Lunch</p>
+    <input id="lunch" placeholder="What did you eat?">
+</div>
+
+<div class="meal">
+    <p class="label">Snacks</p>
+    <input id="snacks" placeholder="What did you eat?">
+</div>
+
+<div class="meal">
+    <p class="label">Dinner</p>
+    <input id="dinner" placeholder="What did you eat?">
+</div>
+<button class="pro-btn" onclick="analyzeFood()">ANALYZE FOOD</button>
+<div class="result">
+    <div class="stat">
+        <span id="totalCal">0</span>
+        <p class="label">Calories</p>
+    </div>
+    <div class="stat">
+        <span id="totalProtein">0</span>
+        <p class="label">Protein</p>
+    </div>
+</div>
+
+</div>
+<script src="foodDB.js"></script>
+<script>
+
+
+
+function analyzeFood() {
+
+    let meals = [
+        document.getElementById("breakfast").value,
+        document.getElementById("lunch").value,
+        document.getElementById("snacks").value,
+        document.getElementById("dinner").value
+    ];
+
+    let total = { calories: 0, protein: 0, carbs: 0, fats: 0 };
+
+    meals.forEach(meal => {
+
+        let foods = meal.toLowerCase().split(" ");
+
+        foods.forEach(food => {
+            if(foodDB[food]) {
+                total.calories += foodDB[food].calories;
+                total.protein += foodDB[food].protein;
+            }
+        });
+
+    });
+
+    document.getElementById("totalCal").innerText = total.calories;
+    document.getElementById("totalProtein").innerText = total.protein;
+}
+</script>
+</body>
+</html>
