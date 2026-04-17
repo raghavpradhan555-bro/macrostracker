@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont;
+      background: linear-gradient(135deg, #667eea, #764ba2, #ff6a88);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: white;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(15px);
+      padding: 25px;
+      border-radius: 20px;
+      width: 320px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .macro {
+      margin-top: 10px;
+      font-size: 18px;
+    
+    }
+
+    .scale-container {
+  position: absolute;
+  top: 40px;
+  width: 80%;
+  text-align: center;
+}
+
+.scale-bar {
+  position: relative;
+  height: 20px;
+  border-radius: 20px;
+  overflow: hidden;
+
+  background: linear-gradient(
+    to right,
+    #ff4d4d 0%,
+    #ff4d4d 30%,
+    #00ff88 30%,
+    #00ff88 70%,
+    #ff4d4d 70%,
+    #ff4d4d 100%
+  );
+
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+/* marker (your current calories point) */
+#marker {
+  position: absolute;
+  top: -5px;
+  width: 4px;
+  height: 30px;
+  background: white;
+  border-radius: 2px;
+  left: 50%;
+}
+
+#scaleText {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #eee;
+}
+#lowText {
+  color: #ff6b6b;
+  font-size: 13px;
+}
+
+#rangeText {
+  color: #00ff88;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+#highText {
+  color: #ff6b6b;
+  font-size: 13px;
+}
+.scale-container {
+  width: 80%;
+  margin: 40px auto;   /* centers it */
+}
+
+.scale-bar {
+  position: relative;
+  height: 20px;
+  border-radius: 20px;
+  overflow: hidden;
+
+  background: linear-gradient(
+    to right,
+    #ff4d4d 0%,
+    #ff4d4d 30%,
+    #00ff88 30%,
+    #00ff88 70%,
+    #ff4d4d 70%,
+    #ff4d4d 100%
+  );
+}
+
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.scale-labels span {
+  width: 33%;
+  font-size: 13px;
+}
+
+/* align each properly */
+#lowText {
+  color: #ff6b6b;
+  text-align: left;
+}
+
+#rangeText {
+  color: #00ff88;
+  text-align: center;
+  font-weight: bold;
+}
+
+#highText {
+  color: #ff6b6b;
+  text-align: right;
+}
+
+.scale-labels span {
+  width: 33%;
+}
+.scale-container {
+  gap: 5px;
+}
+ .main-container {
+  display: flex;
+  flex-direction: column;   /* 👈 vertical */
+  align-items: center;      /* 👈 center horizontally */
+  justify-content: center;
+
+  margin-top: 80px;         /* space from top */
+}
+
+/* button */
+.start-btn {
+  margin-top: 20px;
+
+  padding: 14px 30px;
+  border-radius: 30px;
+  border: none;
+
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+
+  background: linear-gradient(135deg, #1fd1b5, #17a2b8);
+
+  box-shadow: 
+    0 8px 20px rgba(0,0,0,0.25),
+    inset 0 1px 2px rgba(255,255,255,0.3);
+
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.start-btn:hover {
+  transform: scale(1.05);
+}
+
+.start-btn:active {
+  transform: scale(0.95);
+}
+
+  </style>
+</head>
+<body>
+
+
+<div class="scale-container">
+  
+  <div class="scale-bar">
+    <div id="marker"></div>
+  </div>
+
+  <div class="scale-labels">
+    <span id="lowText">LOW</span>
+    <span id="rangeText">RANGE</span>
+    <span id="highText">HIGH</span>
+  </div>
+
+</div>
+
+<div class="main-container">
+
+  <div class="card">
+    <h2>Your Daily Plan</h2>
+    <p id="calories"></p>
+    <p id="protein"></p>
+    <p id="carbs"></p>
+    <p id="fats"></p>
+  </div>
+
+  <button class="start-btn" onclick="goNext()">LET’S GO</button>
+
+</div>
+
+</div>
+<script>
+window.onload = function () {
+
+  console.log("Dashboard loaded");
+
+  // 🔹 Get user data
+  const data = JSON.parse(localStorage.getItem("userData"));
+
+  if (!data) {
+    alert("No data found. Please fill details first.");
+    window.location.href = "index.html";
+    return;
+  }
+
+  // 🔥 BMR Calculation
+  let bmr;
+  if (data.gender === "male") {
+    bmr = 10 * data.weight + 6.25 * data.height - 5 * data.age + 5;
+  } else {
+    bmr = 10 * data.weight + 6.25 * data.height - 5 * data.age - 161;
+  }
+
+  // 🔥 Calories
+  let calories = bmr * 1.3;
+
+  if (data.goal === "loss") calories -= 400;
+  if (data.goal === "gain") calories += 400;
+
+  // 🔥 Macros
+  let protein = data.weight * 2;
+  let fats = (calories * 0.25) / 9;
+  let carbs = (calories - (protein * 4 + fats * 9)) / 4;
+
+  // 🔹 Update dashboard
+  document.getElementById("calories").innerText =
+    "Calories: " + Math.round(calories) + " kcal";
+
+  document.getElementById("protein").innerText =
+    "Protein: " + Math.round(protein) + " g";
+
+  document.getElementById("carbs").innerText =
+    "Carbs: " + Math.round(carbs) + " g";
+
+  document.getElementById("fats").innerText =
+    "Fats: " + Math.round(fats) + " g";
+
+  // 🔥 SCALE LOGIC
+  let lower = Math.round(calories - 200);
+  let upper = Math.round(calories + 200);
+
+  // marker (center for now)
+  const marker = document.getElementById("marker");
+  if (marker) marker.style.left = "50%";
+
+  // labels
+  const lowEl = document.getElementById("lowText");
+  const rangeEl = document.getElementById("rangeText");
+  const highEl = document.getElementById("highText");
+
+  if (lowEl && rangeEl && highEl) {
+    lowEl.innerText = "Below " + lower + " kcal";
+    rangeEl.innerText = lower + " - " + upper + " kcal";
+    highEl.innerText = "Above " + upper + " kcal";
+  }
+
+};
+
+function goNext() {
+  window.location.href = "tracker.html";
+}
+</script>
