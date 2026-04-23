@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-<head
-<meta name="viewport" content="width=device-width, initial-scale=1.0">>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
 <title>Daily Tracker</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
+/* KEEPING YOUR ORIGINAL UI */
 :root {
     --glass: rgba(255, 255, 255, 0.08);
     --glass-border: rgba(255, 255, 255, 0.15);
@@ -13,7 +16,6 @@
     --accent-green: #32d74b;
 }
 
-/* RESET */
 * {
     margin: 0;
     padding: 0;
@@ -21,88 +23,55 @@
     font-family: -apple-system, system-ui, sans-serif;
 }
 
-/* BACKGROUND (same as main app) */
 body {
     height: 100vh;
     display: flex;
-    justify-content: center;
-    align-items: center;
     background: #000;
-    overflow: hidden;
     color: #fff;
 }
 
-/* MESH BG */
-.mesh-bg {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(at 0% 0%, #1a1a2e 0%, transparent 50%),
-                radial-gradient(at 100% 0%, #0f3460 0%, transparent 50%),
-                radial-gradient(at 100% 100%, #16213e 0%, transparent 50%),
-                radial-gradient(at 0% 100%, #000 0%, transparent 50%);
-    background-size: 200% 200%;
-    animation: meshMove 20s ease infinite;
-    z-index: -2;
-}
-@keyframes meshMove {
-    0%,100% { background-position: 0% 0%; }
-    50% { background-position: 100% 100%; }
+/* LEFT PANEL */
+.left {
+    width: 30%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-/* GLOW */
-#luminous-glow {
-    position: absolute;
-    width: 800px;
-    height: 800px;
-    background: radial-gradient(circle, rgba(10,132,255,0.15) 0%, transparent 70%);
-    filter: blur(100px);
-    z-index: -1;
-    transform: translate(-50%, -50%);
-    left: 50%;
-    top: 50%;
+/* RIGHT PANEL */
+.right {
+    width: 70%;
+    padding: 30px;
+    overflow-y: auto;
 }
 
-/* GLASS CARD */
+/* YOUR CARD (UNCHANGED) */
 .glass-card {
     background: var(--glass);
     backdrop-filter: blur(50px);
     border: 1px solid var(--glass-border);
     border-radius: 44px;
     padding: 40px;
-    
     width: 90%;
     max-width: 420px;
-
-    box-shadow: 0 50px 100px rgba(0,0,0,0.9);
-    animation: slideUp 0.6s ease forwards;
 }
 
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* TITLE */
-h2 {
-    font-weight: 200;
-    margin-bottom: 25px;
-}
-
-/* LABEL */
 .label {
     font-size: 0.7rem;
-    color: rgba(255,255,255,0.4);
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 3px;
+    font-weight: 600;
 }
 
-/* MEAL BLOCK */
+input:focus {
+    border: 1px solid rgba(10,132,255,0.6);
+    box-shadow: 0 0 10px rgba(10,132,255,0.3);
+}
+
 .meal {
-    margin-bottom: 18px;
+    margin-bottom: 22px;
 }
 
-/* INPUTS */
 input {
     width: 100%;
     padding: 16px;
@@ -111,12 +80,106 @@ input {
     border: 1px solid var(--glass-border);
     border-radius: 18px;
     color: white;
-    outline: none;
-    font-size: 0.95rem;
-    transition: 0.3s;
 }
 
-/* BUTTON SAME AS MAIN */
+.pro-btn {
+    padding: 18px;
+    border-radius: 20px;
+    margin-top: 20px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+    color: white;
+    border: none;
+    width: 100%;
+}
+
+/* RIGHT SIDE */
+.section {
+    margin-bottom: 30px;
+}
+
+.meal-card {
+    background: rgba(255,255,255,0.06);
+    padding: 18px;
+    border-radius: 22px;
+    margin-bottom: 18px;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: 0.25s;
+}
+
+.meal-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255,255,255,0.09);
+}
+.charts {
+    display: flex;
+    gap: 30px;
+}
+
+canvas {
+    width: 250px !important;
+    height: 250px !important;
+}
+h3 {
+    font-weight: 300;
+    margin-bottom: 12px;
+}
+
+h4 {
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.meal-card p {
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+.section {
+    margin-bottom: 40px;
+}
+.charts {
+    display: flex;
+    gap: 40px;
+    align-items: center;
+}
+#totalStats {
+    margin-top: 10px;
+    padding: 18px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+#totalStats:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.08);
+    transition: 0.25s;
+}
+canvas {
+    background: rgba(255,255,255,0.03);
+    border-radius: 20px;
+    padding: 10px;
+}
+.section:not(:last-child)::after {
+    content: "";
+    display: block;
+    height: 1px;
+    margin-top: 20px;
+    background: rgba(255,255,255,0.08);
+}
+.right {
+    width: 70%;
+    padding: 40px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.left { width: 28%; }
+.right { width: 72%; }
+
 .pro-btn {
     position: relative;
     overflow: hidden;
@@ -142,103 +205,548 @@ input {
     transform: scale(0.95);
 }
 
-/* RESULT CARDS */
-.result {
-    margin-top: 25px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
+.section-title {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
 }
 
-.stat {
-    padding: 15px;
-    border-radius: 18px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--glass-border);
+.chart-box {
+    background: rgba(255,255,255,0.05);
+    padding: 20px;
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.08);
     text-align: center;
+    transition: 0.25s;
 }
 
-.stat span {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--accent-green);
+.chart-box:hover {
+    transform: translateY(-4px);
+    background: rgba(255,255,255,0.08);
 }
+
+.chart-title {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+input {
+    background: rgba(255,255,255,0.04) !important;
+    color: white !important;
+}
+
+.food-item {
+    margin-bottom: 10px;
+}
+
+.food-top {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.food-macros {
+    font-size: 0.75rem;
+    margin-top: 2px;
+    letter-spacing: 1px;
+}
+
+.meal-total {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.calories {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #32d74b;
+}
+
+.macros {
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+/* COLORS */
+.p { color: #3b82f6; }   /* protein */
+.c { color: #facc15; }   /* carbs */
+.f { color: #ef4444; }   /* fats */
+
+.cal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.percent {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 1px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 10px;
+    margin: 8px 0 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0a84ff, #32d74b);
+    border-radius: 10px;
+    transition: width 0.6s ease;
+}
+
+#datePicker {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    padding: 10px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+#datePicker {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    padding: 12px 14px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    transition: 0.25s;
+    cursor: pointer;
+}
+
+#datePicker:hover {
+    transform: translateY(-2px) scale(1.02);
+    background: rgba(255,255,255,0.08);
+    box-shadow: 0 10px 25px rgba(10,132,255,0.2);
+}
+
+#datePicker:focus {
+    outline: none;
+    border: 1px solid rgba(10,132,255,0.6);
+    box-shadow: 0 0 10px rgba(10,132,255,0.4);
+}
+
+#datePicker:active {
+    transform: scale(0.96);
+}
+
+.date-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* keep same button style but smaller */
+.filter-btn {
+    width: auto;
+    padding: 12px 18px;
+    font-size: 0.8rem;
+    border-radius: 14px;
+}
+
+.top-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+/* keep it aligned to left of right panel */
+.right .top-bar {
+    justify-content: flex-start;
+}
+
+/* FIX size of date picker */
+#datePicker {
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 12px;
+}
+
+/* button sizing */
+.filter-btn {
+    height: 42px;
+    padding: 0 18px;
+    font-size: 0.8rem;
+}
+
+#mealsOutput {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.top-bar {
+    background: rgba(255,255,255,0.03);
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="mesh-bg"></div>
-<div id="luminous-glow"></div>
-
+<!-- LEFT -->
+<div class="left">
 <div class="glass-card">
 
 <h2>Daily Intake</h2>
 
 <div class="meal">
-    <p class="label">Breakfast</p>
-    <input id="breakfast" placeholder="What did you eat?">
+<p class="label">Breakfast</p>
+<input id="breakfast">
 </div>
 
 <div class="meal">
-    <p class="label">Lunch</p>
-    <input id="lunch" placeholder="What did you eat?">
+<p class="label">Lunch</p>
+<input id="lunch">
 </div>
 
 <div class="meal">
-    <p class="label">Snacks</p>
-    <input id="snacks" placeholder="What did you eat?">
+<p class="label">Snacks</p>
+<input id="snacks">
 </div>
 
 <div class="meal">
-    <p class="label">Dinner</p>
-    <input id="dinner" placeholder="What did you eat?">
+<p class="label">Dinner</p>
+<input id="dinner">
 </div>
-<button class="pro-btn" onclick="analyzeFood()">ANALYZE FOOD</button>
-<div class="result">
-    <div class="stat">
-        <span id="totalCal">0</span>
-        <p class="label">Calories</p>
+
+<button class="pro-btn" onclick="analyzeFood()">ANALYZE</button>
+
+</div>
+</div>
+
+<!-- RIGHT -->
+<div class="right">
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <input type="date" id="datePicker">
+        <button class="pro-btn filter-btn" onclick="applyDateFilter()">FILTER</button>
     </div>
-    <div class="stat">
-        <span id="totalProtein">0</span>
-        <p class="label">Protein</p>
+
+    <!-- MEALS OUTPUT -->
+    <div id="mealsOutput"></div>
+
+    <!-- TOTAL MACROS -->
+    <div class="section">
+        <h3>Total Macros</h3>
+        <p id="totalStats"></p>
     </div>
-</div>
+
+    <!-- CHARTS -->
+    <div class="section">
+        <div class="charts">
+
+            <div class="chart-box">
+                <p class="chart-title">Macro Split</p>
+                <canvas id="macroChart"></canvas>
+            </div>
+
+            <div class="chart-box">
+                <p class="chart-title">Calorie Goal</p>
+                <canvas id="calorieChart"></canvas>
+            </div>
+
+        </div>
+    </div>
 
 </div>
+
 <script src="foodDB.js"></script>
+
 <script>
 
+let macroChart, calorieChart;
+let goal = Number(localStorage.getItem("calorieGoal")) || 2000;
 
+function normalizeFoodName(word) {
+    return word.toLowerCase().replace(/s$/, "");
+}
+
+function parseInput(meal) {
+
+    meal = meal.toLowerCase();
+
+    let words = meal.split(/\s+/);
+    let items = [];
+
+    let quantity = 1;
+
+    for (let i = 0; i < words.length; i++) {
+
+        let word = words[i];
+
+        // ✅ Case 1: number only
+        if (!isNaN(word)) {
+            quantity = parseFloat(word);
+            continue;
+        }
+
+        // ✅ Case 2: number + unit (250g / 250ml)
+        let match = word.match(/^(\d+)(g|ml)$/);
+
+        if (match) {
+            quantity = parseFloat(match[1]) / 100; // normalize (100g = 1 unit)
+            continue;
+        }
+
+        // ✅ Case 3: normal food
+        let food = word.replace(/s$/, "");
+
+        if (foodDB[food]) {
+            items.push({ food, quantity });
+            quantity = 1;
+        }
+    }
+
+    return items;
+}
 
 function analyzeFood() {
 
-    let meals = [
-        document.getElementById("breakfast").value,
-        document.getElementById("lunch").value,
-        document.getElementById("snacks").value,
-        document.getElementById("dinner").value
-    ];
+    let meals = {
+        Breakfast: document.getElementById("breakfast").value,
+        Lunch: document.getElementById("lunch").value,
+        Snacks: document.getElementById("snacks").value,
+        Dinner: document.getElementById("dinner").value
+    };
 
-    let total = { calories: 0, protein: 0, carbs: 0, fats: 0 };
+    let total = { calories:0, protein:0, carbs:0, fats:0 };
+    let html = "";
 
-    meals.forEach(meal => {
+    for (let mealName in meals) {
 
-        let foods = meal.toLowerCase().split(" ");
+        let items = parseInput(meals[mealName]);
+        let mealTotal = { calories:0, protein:0, carbs:0, fats:0 };
 
-        foods.forEach(food => {
-            if(foodDB[food]) {
-                total.calories += foodDB[food].calories;
-                total.protein += foodDB[food].protein;
-            }
-        });
+        let itemsHTML = "";
 
-    });
+        items.forEach(i => {
+    let f = foodDB[i.food];
 
-    document.getElementById("totalCal").innerText = total.calories;
-    document.getElementById("totalProtein").innerText = total.protein;
+    let cal = f.calories * i.quantity;
+    let protein = f.protein * i.quantity;
+    let carbs = f.carbs * i.quantity;
+    let fats = f.fats * i.quantity;
+
+    mealTotal.calories += cal;
+    mealTotal.protein += protein;
+    mealTotal.carbs += carbs;
+    mealTotal.fats += fats;
+
+    itemsHTML += `
+    <div class="food-item">
+        <div class="food-top">
+            <span>${i.food} (${i.quantity.toFixed(1)})</span>
+        </div>
+        <div class="food-macros">
+            <span class="p">P: ${protein.toFixed(1)}</span>
+            <span class="c">C: ${carbs.toFixed(1)}</span>
+            <span class="f">F: ${fats.toFixed(1)}</span>
+        </div>
+    </div>
+    `;
+});
+        total.calories += mealTotal.calories;
+        total.protein += mealTotal.protein;
+        total.carbs += mealTotal.carbs;
+        total.fats += mealTotal.fats;
+
+        let today = new Date().toISOString().split('T')[0];
+
+let history = JSON.parse(localStorage.getItem("foodHistory")) || {};
+
+history[today] = {
+    meals,
+    total
+};
+
+localStorage.setItem("foodHistory", JSON.stringify(history));
+
+
+function loadDay(date) {
+
+    let history = JSON.parse(localStorage.getItem("foodHistory")) || {};
+
+    if (!history[date]) {
+        alert("No data for this day");
+        return;
+    }
+
+    let data = history[date];
+
+    // Fill inputs
+    document.getElementById("breakfast").value = data.meals.Breakfast;
+    document.getElementById("lunch").value = data.meals.Lunch;
+    document.getElementById("snacks").value = data.meals.Snacks;
+    document.getElementById("dinner").value = data.meals.Dinner;
+
+    // Re-analyze to render UI
+    analyzeFood();
 }
+
+
+document.getElementById("datePicker").addEventListener("change", function() {
+    loadDay(this.value);
+});
+
+
+
+        let percent = goal ? (mealTotal.calories / goal) * 100 : 0;
+
+html += `
+<div class="meal-card">
+    <h4>${mealName}</h4>
+
+    ${itemsHTML}
+
+    <div class="meal-total">
+
+        <div class="cal-row">
+            <span class="calories">
+                ${mealTotal.calories.toFixed(1)} kcal
+            </span>
+            <span class="percent">
+                ${percent.toFixed(0)}%
+            </span>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" style="width:${Math.min(percent,100)}%"></div>
+        </div>
+
+        <div class="macros">
+            <span class="p">P: ${mealTotal.protein.toFixed(1)}</span>
+            <span class="c">C: ${mealTotal.carbs.toFixed(1)}</span>
+            <span class="f">F: ${mealTotal.fats.toFixed(1)}</span>
+        </div>
+
+    </div>
+</div>`;
+    }
+
+    document.getElementById("mealsOutput").innerHTML = html;
+
+    document.getElementById("totalStats").innerHTML = `
+<span style="font-size:1.3rem; font-weight:600;">
+${total.calories.toFixed(1)} kcal
+</span>
+<br>
+<span style="color:#3b82f6;">P: ${total.protein.toFixed(1)}</span> |
+<span style="color:#facc15;">C: ${total.carbs.toFixed(1)}</span> |
+<span style="color:#ef4444;">F: ${total.fats.toFixed(1)}</span>
+`;
+    /* MACRO PIE */
+    if (macroChart) macroChart.destroy();
+
+macroChart = new Chart(document.getElementById("macroChart"), {
+    type: 'pie',
+    data: {
+        labels: ['Protein', 'Carbs', 'Fats'],
+        datasets: [{
+            data: [total.protein, total.carbs, total.fats],
+            backgroundColor: ['#3b82f6', '#facc15', '#ef4444']
+        }]
+    },
+    options: {
+        responsive: true,
+        animation: {
+            duration: 1500,
+            easing: 'easeOutExpo',
+            animateRotate: true,
+            animateScale: true
+        }
+    }
+});
+
+if (calorieChart) calorieChart.destroy();
+
+let remaining = goal - total.calories;
+let over = total.calories > goal;
+
+calorieChart = new Chart(document.getElementById("calorieChart"), {
+    type: 'pie',
+    data: {
+        labels: ['Consumed', 'Remaining'],
+        datasets: [{
+            data: [total.calories, Math.max(remaining, 0)],
+            backgroundColor: [
+                over ? '#ef4444' : '#ffffff',
+                'rgba(255,255,255,0.15)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        animation: {
+            duration: 1500,
+            easing: 'easeOutExpo',
+            animateRotate: true,
+            animateScale: true
+        }
+    }
+});
+}
+
+// your functions above...
+
+
+document.getElementById("datePicker").value = today;
+
+function applyDateFilter() {
+    let selectedDate = document.getElementById("datePicker").value;
+
+    if (!selectedDate) {
+        alert("Select a date first");
+        return;
+    }
+
+    loadDay(selectedDate);
+}
+
+function applyDateFilter() {
+    let btn = document.querySelector(".filter-btn");
+    let selectedDate = document.getElementById("datePicker").value;
+
+    if (!selectedDate) {
+        alert("Select a date first");
+        return;
+    }
+
+    btn.innerHTML = "FILTER";
+
+    setTimeout(() => {
+        let history = JSON.parse(localStorage.getItem("foodHistory")) || {};
+
+        if (!history[selectedDate]) {
+            alert("No data for this day");
+            btn.innerHTML = "FILTER"; // 🔥 reset here
+            return;
+        }
+
+        loadDay(selectedDate);
+
+        btn.innerHTML = "FILTER"; // 🔥 reset after load
+
+    }, 300); // small delay for effect
+}
+
+
 </script>
+
 </body>
 </html>
