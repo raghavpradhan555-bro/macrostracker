@@ -909,6 +909,19 @@ function clearDay() {
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
 }
+if (!history[today]) {
+    document.body.insertAdjacentHTML("afterbegin",
+        `<div style="
+            background:#ff3b30;
+            color:white;
+            padding:10px;
+            text-align:center;
+        ">
+        You haven't tracked today ⚠️
+        </div>`
+    );
+}
+    
 </script>
 
 </body>
