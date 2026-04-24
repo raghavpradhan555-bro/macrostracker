@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a84ff">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
 <title>Daily Tracker</title>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -52,7 +54,7 @@ body {
     border: 1px solid var(--glass-border);
     border-radius: 44px;
     padding: 40px;
-    width: 90%;
+    width: 100%;
     max-width: 420px;
 }
 
@@ -392,6 +394,52 @@ input {
     border-radius: 16px;
     border: 1px solid rgba(255,255,255,0.06);
 }
+ #suggestions div {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+#suggestions div:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+@media (max-width: 768px) {
+
+    body {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .left, .right {
+        width: 100%;
+    }
+
+    .glass-card {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .right {
+        padding: 15px;
+    }
+
+    .charts {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    .top-bar {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+}
 
 </style>
 </head>
@@ -424,8 +472,21 @@ input {
 <input id="dinner">
 </div>
 
-<button class="pro-btn" onclick="analyzeFood()">ANALYZE</button>
+<div style="margin-top:15px;">
+    <input id="foodSearch" placeholder="Search food (e.g. egg, rice)">
+    <div id="suggestions" style="
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        margin-top: 5px;
+        max-height: 150px;
+        overflow-y: auto;
+        display:none;
+    "></div>
+</div>
 
+<button class="pro-btn" onclick="analyzeFood()">ADD MEAL</button>
+
+<button class="pro-btn" onclick="openCustomFood()">+ Add Custom Food</button>
 </div>
 </div>
 
@@ -461,9 +522,13 @@ input {
                 <canvas id="calorieChart"></canvas>
             </div>
 
+            <button class="pro-btn" onclick="downloadPDF()">Download Report</button>
+        <button class="pro-btn" onclick="clearDay()">Clear Today</button>
         </div>
     </div>
+ 
 
+    
 </div>
 
 <script src="foodDB.js"></script>
@@ -473,10 +538,12 @@ input {
 let macroChart, calorieChart;
 let goal = Number(localStorage.getItem("calorieGoal")) || 2000;
 
-function normalizeFoodName(word) {
-    return word.toLowerCase().replace(/s$/, "");
-}
+// 🔥 HISTORY SYSTEM
+let foodHistory = JSON.parse(localStorage.getItem("foodHistory")) || {};
+let today = new Date().toISOString().split('T')[0];
 
+
+// ================= PARSE INPUT =================
 function parseInput(meal) {
 
     meal = meal.toLowerCase();
@@ -490,21 +557,18 @@ function parseInput(meal) {
 
         let word = words[i];
 
-        // ✅ Case 1: number only
         if (!isNaN(word)) {
             quantity = parseFloat(word);
             continue;
         }
 
-        // ✅ Case 2: number + unit (250g / 250ml)
         let match = word.match(/^(\d+)(g|ml)$/);
 
         if (match) {
-            quantity = parseFloat(match[1]) / 100; // normalize (100g = 1 unit)
+            quantity = parseFloat(match[1]) / 100;
             continue;
         }
 
-        // ✅ Case 3: normal food
         let food = word.replace(/s$/, "");
 
         if (foodDB[food]) {
@@ -516,6 +580,8 @@ function parseInput(meal) {
     return items;
 }
 
+
+// ================= MAIN FUNCTION =================
 function analyzeFood() {
 
     let meals = {
@@ -536,177 +602,159 @@ function analyzeFood() {
         let itemsHTML = "";
 
         items.forEach(i => {
-    let f = foodDB[i.food];
+            let f = foodDB[i.food];
 
-    let cal = f.calories * i.quantity;
-    let protein = f.protein * i.quantity;
-    let carbs = f.carbs * i.quantity;
-    let fats = f.fats * i.quantity;
+            let cal = f.calories * i.quantity;
+            let protein = f.protein * i.quantity;
+            let carbs = f.carbs * i.quantity;
+            let fats = f.fats * i.quantity;
 
-    mealTotal.calories += cal;
-    mealTotal.protein += protein;
-    mealTotal.carbs += carbs;
-    mealTotal.fats += fats;
+            mealTotal.calories += cal;
+            mealTotal.protein += protein;
+            mealTotal.carbs += carbs;
+            mealTotal.fats += fats;
 
-    itemsHTML += `
-    <div class="food-item">
-        <div class="food-top">
-            <span>${i.food} (${i.quantity.toFixed(1)})</span>
-        </div>
-        <div class="food-macros">
-            <span class="p">P: ${protein.toFixed(1)}</span>
-            <span class="c">C: ${carbs.toFixed(1)}</span>
-            <span class="f">F: ${fats.toFixed(1)}</span>
-        </div>
-    </div>
-    `;
-});
+            itemsHTML += `
+            <div class="food-item">
+                <div class="food-top">
+                    <span>${i.food} (${i.quantity.toFixed(1)})</span>
+                </div>
+                <div class="food-macros">
+                    <span class="p">P: ${protein.toFixed(1)}</span>
+                    <span class="c">C: ${carbs.toFixed(1)}</span>
+                    <span class="f">F: ${fats.toFixed(1)}</span>
+                </div>
+            </div>
+            `;
+        });
+
         total.calories += mealTotal.calories;
         total.protein += mealTotal.protein;
         total.carbs += mealTotal.carbs;
         total.fats += mealTotal.fats;
 
-        let today = new Date().toISOString().split('T')[0];
+        let percent = goal ? (mealTotal.calories / goal) * 100 : 0;
 
-let history = JSON.parse(localStorage.getItem("foodHistory")) || {};
+        html += `
+        <div class="meal-card">
+            <h4>${mealName}</h4>
 
-history[today] = {
-    meals,
-    total
-};
+          ${itemsHTML || "<p style='opacity:0.5'>No items added</p>"}
 
-localStorage.setItem("foodHistory", JSON.stringify(history));
+            <div class="meal-total">
+
+                <div class="cal-row">
+                    <span class="calories">
+                        ${mealTotal.calories.toFixed(1)} kcal
+                    </span>
+                    <span class="percent">
+                        ${percent.toFixed(0)}%
+                    </span>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width:${Math.min(percent,100)}%"></div>
+                </div>
+
+                <div class="macros">
+                    <span class="p">P: ${mealTotal.protein.toFixed(1)}</span>
+                    <span class="c">C: ${mealTotal.carbs.toFixed(1)}</span>
+                    <span class="f">F: ${mealTotal.fats.toFixed(1)}</span>
+                </div>
+
+            </div>
+        </div>`;
+    }
+
+    // 🔥 SAVE HISTORY
+    let selectedDate = document.getElementById("datePicker").value || today;
+
+    foodHistory[selectedDate] = {
+        meals,
+        total
+    };
+
+    localStorage.setItem("foodHistory", JSON.stringify(foodHistory));
 
 
+    // 🔥 UPDATE UI
+    document.getElementById("mealsOutput").innerHTML = html;
+
+    document.getElementById("totalStats").innerHTML = `
+    <span style="font-size:1.3rem; font-weight:600;">
+    ${total.calories.toFixed(1)} kcal
+    </span>
+    <br>
+    <span style="color:#3b82f6;">P: ${total.protein.toFixed(1)}</span> |
+    <span style="color:#facc15;">C: ${total.carbs.toFixed(1)}</span> |
+    <span style="color:#ef4444;">F: ${total.fats.toFixed(1)}</span>
+    `;
+
+    updateCharts(total);
+}
+
+
+// ================= LOAD DAY =================
 function loadDay(date) {
 
-    let history = JSON.parse(localStorage.getItem("foodHistory")) || {};
-
-    if (!history[date]) {
+    if (!foodHistory[date]) {
         alert("No data for this day");
         return;
     }
 
-    let data = history[date];
+    let data = foodHistory[date];
 
-    // Fill inputs
     document.getElementById("breakfast").value = data.meals.Breakfast;
     document.getElementById("lunch").value = data.meals.Lunch;
     document.getElementById("snacks").value = data.meals.Snacks;
     document.getElementById("dinner").value = data.meals.Dinner;
 
-    // Re-analyze to render UI
     analyzeFood();
 }
 
+
+// ================= CHARTS =================
+function updateCharts(total) {
+
+    if (macroChart) macroChart.destroy();
+
+    macroChart = new Chart(document.getElementById("macroChart"), {
+        type: 'pie',
+        data: {
+            labels: ['Protein', 'Carbs', 'Fats'],
+            datasets: [{
+                data: [total.protein, total.carbs, total.fats],
+                backgroundColor: ['#3b82f6', '#facc15', '#ef4444']
+            }]
+        }
+    });
+
+    if (calorieChart) calorieChart.destroy();
+
+    let remaining = goal - total.calories;
+
+    calorieChart = new Chart(document.getElementById("calorieChart"), {
+        type: 'pie',
+        data: {
+            labels: ['Consumed', 'Remaining'],
+            datasets: [{
+                data: [total.calories, Math.max(remaining, 0)],
+                backgroundColor: ['#ffffff', 'rgba(255,255,255,0.15)']
+            }]
+        }
+    });
+}
+
+
+// ================= DATE SYSTEM =================
+document.getElementById("datePicker").value = today;
 
 document.getElementById("datePicker").addEventListener("change", function() {
     loadDay(this.value);
 });
 
 
-
-        let percent = goal ? (mealTotal.calories / goal) * 100 : 0;
-
-html += `
-<div class="meal-card">
-    <h4>${mealName}</h4>
-
-    ${itemsHTML}
-
-    <div class="meal-total">
-
-        <div class="cal-row">
-            <span class="calories">
-                ${mealTotal.calories.toFixed(1)} kcal
-            </span>
-            <span class="percent">
-                ${percent.toFixed(0)}%
-            </span>
-        </div>
-
-        <div class="progress-bar">
-            <div class="progress-fill" style="width:${Math.min(percent,100)}%"></div>
-        </div>
-
-        <div class="macros">
-            <span class="p">P: ${mealTotal.protein.toFixed(1)}</span>
-            <span class="c">C: ${mealTotal.carbs.toFixed(1)}</span>
-            <span class="f">F: ${mealTotal.fats.toFixed(1)}</span>
-        </div>
-
-    </div>
-</div>`;
-    }
-
-    document.getElementById("mealsOutput").innerHTML = html;
-
-    document.getElementById("totalStats").innerHTML = `
-<span style="font-size:1.3rem; font-weight:600;">
-${total.calories.toFixed(1)} kcal
-</span>
-<br>
-<span style="color:#3b82f6;">P: ${total.protein.toFixed(1)}</span> |
-<span style="color:#facc15;">C: ${total.carbs.toFixed(1)}</span> |
-<span style="color:#ef4444;">F: ${total.fats.toFixed(1)}</span>
-`;
-    /* MACRO PIE */
-    if (macroChart) macroChart.destroy();
-
-macroChart = new Chart(document.getElementById("macroChart"), {
-    type: 'pie',
-    data: {
-        labels: ['Protein', 'Carbs', 'Fats'],
-        datasets: [{
-            data: [total.protein, total.carbs, total.fats],
-            backgroundColor: ['#3b82f6', '#facc15', '#ef4444']
-        }]
-    },
-    options: {
-        responsive: true,
-        animation: {
-            duration: 1500,
-            easing: 'easeOutExpo',
-            animateRotate: true,
-            animateScale: true
-        }
-    }
-});
-
-if (calorieChart) calorieChart.destroy();
-
-let remaining = goal - total.calories;
-let over = total.calories > goal;
-
-calorieChart = new Chart(document.getElementById("calorieChart"), {
-    type: 'pie',
-    data: {
-        labels: ['Consumed', 'Remaining'],
-        datasets: [{
-            data: [total.calories, Math.max(remaining, 0)],
-            backgroundColor: [
-                over ? '#ef4444' : '#ffffff',
-                'rgba(255,255,255,0.15)'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        animation: {
-            duration: 1500,
-            easing: 'easeOutExpo',
-            animateRotate: true,
-            animateScale: true
-        }
-    }
-});
-}
-
-// your functions above...
-
-
-document.getElementById("datePicker").value = today;
-
+// ================= FILTER BUTTON =================
 function applyDateFilter() {
     let selectedDate = document.getElementById("datePicker").value;
 
@@ -718,35 +766,184 @@ function applyDateFilter() {
     loadDay(selectedDate);
 }
 
-function applyDateFilter() {
-    let btn = document.querySelector(".filter-btn");
-    let selectedDate = document.getElementById("datePicker").value;
+const searchInput = document.getElementById("foodSearch");
+const suggestionsBox = document.getElementById("suggestions");
 
-    if (!selectedDate) {
-        alert("Select a date first");
+searchInput.addEventListener("input", function() {
+
+    let value = this.value.toLowerCase();
+    suggestionsBox.innerHTML = "";
+
+    if (!value) {
+        suggestionsBox.style.display = "none";
         return;
     }
 
-    btn.innerHTML = "FILTER";
+    let matches = Object.keys(foodDB).filter(food =>
+        food.includes(value)
+    );
 
-    setTimeout(() => {
-        let history = JSON.parse(localStorage.getItem("foodHistory")) || {};
+    matches.forEach(food => {
+        let div = document.createElement("div");
+        div.innerText = food;
 
-        if (!history[selectedDate]) {
-            alert("No data for this day");
-            btn.innerHTML = "FILTER"; // 🔥 reset here
-            return;
-        }
+        div.addEventListener("click", () => {
+            insertFood(food);
+            suggestionsBox.style.display = "none";
+            searchInput.value = "";
+        });
 
-        loadDay(selectedDate);
+        suggestionsBox.appendChild(div);
+    });
 
-        btn.innerHTML = "FILTER"; // 🔥 reset after load
+    suggestionsBox.style.display = "block";
+});
 
-    }, 300); // small delay for effect
+function insertFood(food) {
+
+    let active = document.activeElement;
+
+    if (active && active.tagName === "INPUT") {
+        active.value += " " + food;
+    } else {
+        document.getElementById("breakfast").value += " " + food;
+    }
+}
+
+// 🔥 LOAD CUSTOM FOODS
+let customFoods = JSON.parse(localStorage.getItem("customFoods")) || {};
+
+// merge into foodDB
+Object.assign(foodDB, customFoods);
+
+
+// ================= MODAL =================
+function openCustomFood() {
+    document.getElementById("customFoodModal").style.display = "flex";
+}
+
+function closeCustomFood() {
+    document.getElementById("customFoodModal").style.display = "none";
 }
 
 
+// ================= SAVE FOOD =================
+function saveCustomFood() {
+
+    let name = document.getElementById("cfName").value.toLowerCase();
+    let calories = Number(document.getElementById("cfCalories").value);
+    let protein = Number(document.getElementById("cfProtein").value);
+    let carbs = Number(document.getElementById("cfCarbs").value);
+    let fats = Number(document.getElementById("cfFats").value);
+
+    if (!name) {
+        alert("Enter food name");
+        return;
+    }
+
+    let newFood = {
+        calories,
+        protein,
+        carbs,
+        fats
+    };
+
+    // save
+    customFoods[name] = newFood;
+    localStorage.setItem("customFoods", JSON.stringify(customFoods));
+
+    // update DB
+    foodDB[name] = newFood;
+
+    closeCustomFood();
+
+    alert(name + " added successfully!");
+}
+
+function downloadPDF() {
+
+    let element = document.querySelector(".right");
+
+    let opt = {
+        margin: 0.5,
+        filename: "nutrition-report.pdf",
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+}
+
+["breakfast","lunch","snacks","dinner"].forEach(id => {
+    document.getElementById(id).addEventListener("input", () => {
+        analyzeFood();
+    });
+});
+
+let lastDate = localStorage.getItem("lastDate");
+
+if (lastDate) {
+    document.getElementById("datePicker").value = lastDate;
+    loadDay(lastDate);
+}
+
+function clearDay() {
+
+    let date = document.getElementById("datePicker").value;
+
+    if (!foodHistory[date]) return;
+
+    if (!confirm("Clear this day?")) return;
+
+    delete foodHistory[date];
+    localStorage.setItem("foodHistory", JSON.stringify(foodHistory));
+
+    document.getElementById("breakfast").value = "";
+    document.getElementById("lunch").value = "";
+    document.getElementById("snacks").value = "";
+    document.getElementById("dinner").value = "";
+
+    analyzeFood();
+}
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
 </script>
 
 </body>
+
+<div id="customFoodModal" style="
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background: rgba(0,0,0,0.6);
+    justify-content:center;
+    align-items:center;
+">
+
+<div style="
+    background:#111;
+    padding:25px;
+    border-radius:20px;
+    width:300px;
+">
+
+<h3>Add Custom Food</h3>
+
+<input id="cfName" placeholder="Food name">
+<input id="cfCalories" placeholder="Calories">
+<input id="cfProtein" placeholder="Protein">
+<input id="cfCarbs" placeholder="Carbs">
+<input id="cfFats" placeholder="Fats">
+
+<button class="pro-btn" onclick="saveCustomFood()">Save</button>
+<button class="pro-btn" onclick="closeCustomFood()">Cancel</button>
+
+</div>
+</div>
+
 </html>
