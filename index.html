@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a84ff">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elite Health Architecture</title>
@@ -155,6 +158,38 @@
 .pro-btn:active {
   transform: scale(0.95);
 }
+
+.activity-select {
+    width: 100%;
+    padding: 16px;
+    margin-top: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 18px;
+    color: white;
+    font-size: 14px;
+    appearance: none;
+    cursor: pointer;
+}
+
+/* hover + focus like your inputs */
+.activity-select:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+.activity-select:focus {
+    border: 1px solid rgba(10,132,255,0.6);
+    box-shadow: 0 0 10px rgba(10,132,255,0.3);
+    outline: none;
+}
+
+.activity-select {
+    background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='20' viewBox='0 0 24 24' width='20'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 18px;
+}
+
     </style>
 </head>
 <body>
@@ -173,12 +208,25 @@
                 <div class="segment-btn" onclick="setGender('female', this)">Female</div>
             </div>
 
+            <!-- ✅ ACTIVITY LEVEL (FIXED POSITION + STYLE) -->
+            <label class="label">ACTIVITY LEVEL</label>
+            <select id="activity" class="activity-select">
+                <option value="1.2">Sedentary</option>
+                <option value="1.375">Light</option>
+                <option value="1.55">Moderate</option>
+                <option value="1.725">Active</option>
+                <option value="1.9">Very Active</option>
+            </select>
+
             <div class="segment-container">
                 <div class="segment-btn active" id="btn-cm" onclick="setU('cm')">Metric</div>
                 <div class="segment-btn" id="btn-ft" onclick="setU('ft')">Imperial</div>
             </div>
             
-            <div id="h-wrap"><input type="number" id="h-val" class="validate" placeholder="Height (cm)"></div>
+            <div id="h-wrap">
+                <input type="number" id="h-val" class="validate" placeholder="Height (cm)">
+            </div>
+
             <input type="number" id="weight" class="validate" placeholder="Weight (kg)">
             <input type="number" id="age" class="validate" placeholder="Age">
             
@@ -198,115 +246,133 @@
         <div id="step3" class="hidden">
             <p class="label">Target Calories</p>
             <div class="cal-hero" id="d-cals">0</div>
-            <div style="height: 160px; margin: 10px 0;"><canvas id="chart"></canvas></div>
-            <div class="stat-grid" id="statGrid">
-                <div class="stat-card" style="animation-delay: 0.2s">
-                    <span id="d-p" style="color:var(--protein); font-size: 1.8rem; font-weight: 700;">0</span><p class="label">Protein</p>
+
+            <div style="height: 160px; margin: 10px 0;">
+                <canvas id="chart"></canvas>
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <span id="d-p">0</span><p class="label">Protein</p>
                 </div>
-                <div class="stat-card" style="animation-delay: 0.4s">
-                    <span id="d-c" style="color:var(--carbs); font-size: 1.8rem; font-weight: 700;">0</span><p class="label">Carbs</p>
+                <div class="stat-card">
+                    <span id="d-c">0</span><p class="label">Carbs</p>
                 </div>
-                <div class="stat-card" style="animation-delay: 0.6s">
-                    <span id="d-f" style="color:var(--fats); font-size: 1.8rem; font-weight: 700;">0</span><p class="label">Fats</p>
+                <div class="stat-card">
+                    <span id="d-f">0</span><p class="label">Fats</p>
                 </div>
-                <div class="stat-card" style="animation-delay: 0.8s">
-                    <span id="d-fiber" style="color:#fff; font-size: 1.8rem; font-weight: 700;">0</span><p class="label">Fiber</p>
+                <div class="stat-card">
+                    <span id="d-fiber">0</span><p class="label">Fiber</p>
                 </div>
             </div>
-            <button class="pro-btn" style="background: var(--glass); margin-top: 30px; border: 1px solid var(--glass-border);" onclick="location.reload()">RESET</button>
-        <button class="pro-btn" onclick="goTracker()">LET’S GO</button>
-          </div>
+
+            <button class="pro-btn" onclick="location.reload()">RESET</button>
+            <button class="pro-btn" onclick="goTracker()">LET’S GO</button>
+        </div>
     </div>
 
-    <script>
-        let userData = { gender: 'male', unit: 'cm' };
+<script>
+let userData = { gender: 'male', unit: 'cm' };
 
-        function setGender(val, el) {
-            userData.gender = val;
-            el.parentElement.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-        }
-
-        function setU(u) {
-            userData.unit = u;
-            document.getElementById('btn-cm').classList.toggle('active', u === 'cm');
-            document.getElementById('btn-ft').classList.toggle('active', u === 'ft');
-            const wrap = document.getElementById('h-wrap');
-            wrap.innerHTML = u === 'ft' 
-                ? `<div style="display:flex; gap:10px"><input type="number" id="ft" class="validate" placeholder="Ft"><input type="number" id="in" class="validate" placeholder="In"></div>`
-                : `<input type="number" id="h-val" class="validate" placeholder="Height (cm)">`;
-        }
-
-        function validateStep1() {
-            let isValid = true;
-            const fields = document.querySelectorAll('.validate');
-            fields.forEach(f => {
-                if(!f.value || f.value <= 0) { f.classList.add('input-error'); isValid = false; }
-                else { f.classList.remove('input-error'); }
-            });
-
-            if(!isValid) {
-                const card = document.getElementById('mainCard');
-                card.classList.add('error-shake');
-                setTimeout(() => card.classList.remove('error-shake'), 400);
-                return;
-            }
-            goTo(2, '#7000FF');
-        }
-
-        function goTo(s, col) {
-            const glow = document.getElementById('luminous-glow');
-            glow.style.background = `radial-gradient(circle, ${col}44 0%, transparent 70%)`;
-            document.querySelectorAll('.glass-card > div').forEach(d => { d.classList.remove('visible'); d.classList.add('hidden'); });
-            const next = document.getElementById('step' + s);
-            next.classList.remove('hidden');
-            setTimeout(() => next.classList.add('visible'), 50);
-        }
-
-        function genDash() {
-            goTo(3, '#32D74B');
-            document.getElementById('mainCard').style.width = '480px';
-            
-            const w = parseFloat(document.getElementById('weight').value);
-            const g = document.getElementById('goal').value;
-
-            let p = g === 'gain' ? w*2.2 : (g === 'lose' ? w*2.1 : w*1.8);
-            let f = userData.gender === 'female' ? w*0.9 : w*0.8; 
-            let c = g === 'gain' ? w*4.8 : (g === 'lose' ? w*2.2 : w*3.5);
-            let cals = (p*4) + (c*4) + (f*9);
-
-            animate('d-cals', cals);
-            animate('d-p', p);
-            animate('d-c', c);
-            animate('d-f', f);
-            animate('d-fiber', Math.round(cals/1000 * 14));
-
-            document.querySelectorAll('.stat-card').forEach(c => c.classList.add('animate-card'));
-
-            new Chart(document.getElementById('chart'), {
-                type: 'doughnut',
-                data: {
-                    datasets: [{
-                        data: [p*4, c*4, f*9],
-                        backgroundColor: ['#FF375F', '#0A84FF', '#FFD60A'],
-                        borderWidth: 0
-                    }]
-                },
-                options: { cutout: '85%', plugins: { legend: { display: false } }, animation: { duration: 2000 } }
-            });
-        }
-
-        function animate(id, val) {
-            let s = 0; const obj = document.getElementById(id);
-            const t = setInterval(() => {
-                s += Math.ceil(val/40);
-                if(s >= val) { obj.innerText = Math.round(val); clearInterval(t); }
-                else obj.innerText = s;
-            }, 20);
-        }
-        function goTracker() {
-  window.location.href = "tracker.html";
+function setGender(val, el) {
+    userData.gender = val;
+    el.parentElement.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
 }
-    </script>
+
+function setU(u) {
+    userData.unit = u;
+    document.getElementById('btn-cm').classList.toggle('active', u === 'cm');
+    document.getElementById('btn-ft').classList.toggle('active', u === 'ft');
+
+    const wrap = document.getElementById('h-wrap');
+    wrap.innerHTML = u === 'ft' 
+        ? `<div style="display:flex; gap:10px">
+            <input type="number" id="ft" class="validate" placeholder="Ft">
+            <input type="number" id="in" class="validate" placeholder="In">
+          </div>`
+        : `<input type="number" id="h-val" class="validate" placeholder="Height (cm)">`;
+}
+
+function validateStep1() {
+    let isValid = true;
+    document.querySelectorAll('.validate').forEach(f => {
+        if(!f.value || f.value <= 0) {
+            f.classList.add('input-error');
+            isValid = false;
+        } else {
+            f.classList.remove('input-error');
+        }
+    });
+
+    if(!isValid) return;
+    goTo(2, '#7000FF');
+}
+
+function goTo(s, col) {
+    document.querySelectorAll('.glass-card > div').forEach(d => {
+        d.classList.remove('visible');
+        d.classList.add('hidden');
+    });
+
+    const next = document.getElementById('step' + s);
+    next.classList.remove('hidden');
+    setTimeout(() => next.classList.add('visible'), 50);
+}
+
+function genDash() {
+
+    goTo(3, '#32D74B');
+
+    const w = parseFloat(document.getElementById('weight').value);
+    const g = document.getElementById('goal').value;
+    const activity = Number(document.getElementById("activity").value); // ✅ FIXED
+
+    let p = g === 'gain' ? w*2.2 : (g === 'lose' ? w*2.1 : w*1.8);
+    let f = userData.gender === 'female' ? w*0.9 : w*0.8;
+    let c = g === 'gain' ? w*4.8 : (g === 'lose' ? w*2.2 : w*3.5);
+
+    let baseCalories = (p*4) + (c*4) + (f*9);
+
+    let cals = baseCalories * activity; // ✅ ACTIVITY APPLIED
+
+    animate('d-cals', cals);
+    animate('d-p', p);
+    animate('d-c', c);
+    animate('d-f', f);
+    animate('d-fiber', Math.round(cals/1000 * 14));
+
+    new Chart(document.getElementById('chart'), {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [p*4, c*4, f*9],
+                backgroundColor: ['#FF375F', '#0A84FF', '#FFD60A']
+            }]
+        }
+    });
+}
+
+function animate(id, val) {
+    let s = 0;
+    const obj = document.getElementById(id);
+    const t = setInterval(() => {
+        s += Math.ceil(val/40);
+        if(s >= val) {
+            obj.innerText = Math.round(val);
+            clearInterval(t);
+        } else obj.innerText = s;
+    }, 20);
+}
+
+function goTracker() {
+    window.location.href = "tracker.html";
+}
+
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js");
+}
+</script>
+
 </body>
 </html>
