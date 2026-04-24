@@ -26,11 +26,14 @@
 }
 
 body {
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
+    flex-direction: row;
     background: #000;
     color: #fff;
+    overflow-x: hidden;
 }
+
 
 /* LEFT PANEL */
 .left {
@@ -441,6 +444,134 @@ input {
 
 }
 
+@media (max-width: 768px) {
+
+    body {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .left {
+        width: 100%;
+        order: 1;
+        padding: 10px;
+    }
+
+    .right {
+        width: 100%;
+        order: 2;
+        padding: 12px;
+    }
+
+    .glass-card {
+        width: 100%;
+        max-width: 100%;
+        padding: 20px;
+        border-radius: 24px;
+    }
+
+    input {
+        font-size: 16px !important;
+        padding: 14px;
+    }
+
+    .charts {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    .top-bar {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+}
+
+input, select {
+    font-size: 16px !important;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+* {
+    max-width: 100%;
+}
+
+body {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pro-btn {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pro-btn:active {
+    transform: scale(0.96);
+    box-shadow: 0 6px 20px rgba(10,132,255,0.3);
+}
+
+input:active, select:active {
+    transform: scale(0.98);
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(20px);
+    display: flex;
+    justify-content: space-around;
+    padding: 12px 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.nav-item {
+    color: white;
+    font-size: 1.4rem;
+    opacity: 0.6;
+    transition: 0.2s;
+}
+
+.nav-item.active {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.meal-card {
+    margin-bottom: 20px;
+}
+
+.section {
+    margin-bottom: 35px;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    -webkit-overflow-scrolling: touch;
+}
+
+h2, h3 {
+    letter-spacing: 0.5px;
+}
+
+.label {
+    font-size: 0.7rem;
+    opacity: 0.6;
+}
+
 </style>
 </head>
 
@@ -526,6 +657,12 @@ input {
         <button class="pro-btn" onclick="clearDay()">Clear Today</button>
         </div>
     </div>
+
+    <div class="bottom-nav">
+    <div class="nav-item active" onclick="location.href='tracker.html'">🏠</div>
+    <div class="nav-item" onclick="location.href='analytics.html'">📊</div>
+    <div class="nav-item" onclick="window.scrollTo(0,0)">⬆️</div>
+</div>
  
 
     
@@ -909,6 +1046,7 @@ function clearDay() {
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
 }
+
 if (!history[today]) {
     document.body.insertAdjacentHTML("afterbegin",
         `<div style="
@@ -921,7 +1059,6 @@ if (!history[today]) {
         </div>`
     );
 }
-    
 </script>
 
 </body>
