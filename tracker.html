@@ -572,6 +572,11 @@ h2, h3 {
     opacity: 0.6;
 }
 
+    input:focus {
+    border: 1px solid #0a84ff;
+    box-shadow: 0 0 12px rgba(10,132,255,0.4);
+}
+
 </style>
 </head>
 
@@ -1066,6 +1071,12 @@ if (!history[today]) {
     input.addEventListener("focus", () => {
         currentInput = input;
     });
+});
+
+    document.addEventListener("click", (e) => {
+    if (!e.target.closest("#foodSearch")) {
+        document.getElementById("suggestions").style.display = "none";
+    }
 });
 </script>
 
